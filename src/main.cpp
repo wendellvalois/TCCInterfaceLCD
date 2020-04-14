@@ -1,5 +1,3 @@
-// =============================================================================================================
-// --- Bibliotecas Auxiliares ---
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 #include <dht.h>
@@ -36,8 +34,8 @@ unsigned long timerIntervalo;
 unsigned long tempoAtual;
 
 // Button debounce variables
-int leituraAnteriorDebounce[NUMERO_BOTOES] = {0}; // para todos os botões usados
-int leituraDebounce[NUMERO_BOTOES] = {0};
+int leituraAnteriorDebounce[NUMERO_BOTOES] = {LOW}; // para todos os botões usados
+int leituraDebounce[NUMERO_BOTOES] = {LOW};
 
 // =============================================================================================================
 // --- Protótipo das Funções ---
@@ -55,8 +53,6 @@ void limpaEEPROM();
 // --- Variáveis Globais ---
 int menu_num = 1, sub_menu = 1;
 
-// =============================================================================================================
-// --- Função Para Debouncing ---
 /*
   * A função de debounce serve para descobrir se um botão foi pressionado
   * 
@@ -65,16 +61,21 @@ int menu_num = 1, sub_menu = 1;
   * @param intervalo : a quantidade de tempo a esperar desde o pressionar do botão
   * @return novoValor : valor atual do botão
 */
-int debounce(int pin, int estadoBotao, int intervalo){
+int debounce(int pin, int estadoBotao, int intervaloDebouncing){
   // previousReading = currentReading;
   int novoValor = digitalRead(pin);
   if (novoValor != estadoBotao){
-    delay(intervalo);
+    delay(intervaloDebouncing);
     novoValor = digitalRead(pin);
     if (novoValor != estadoBotao){
       estadoBotao = novoValor;
     }
-    return novoValor;
+    // return novoValor;
+      
+   if ((novoValor == HIGH) && (estadoBotao == LOW)) {
+     return true;
+   }
+   return false;
   }
 }
 
