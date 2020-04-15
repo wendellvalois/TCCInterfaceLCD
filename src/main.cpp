@@ -25,7 +25,7 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 // Inicialização do display com módulo I2C
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-int intervalo = 1;
+int intervalo = 5;
 int enderecomMem;
 
 // Variáveis de temporizador
@@ -34,12 +34,12 @@ unsigned long timerIntervalo;
 unsigned long tempoAtual;
 
 // Button debounce variables
-int leituraAnteriorDebounce[NUMERO_BOTOES] = {LOW}; // para todos os botões usados
-int leituraDebounce[NUMERO_BOTOES] = {LOW};
+int leituraAnteriorDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW}; // para todos os botões usados
+int leituraAtualDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW};
 
 // =============================================================================================================
 // --- Protótipo das Funções ---
-void keyboard();
+void capturaBotao();
 void menu1();
 void menu2();
 void menu3();
@@ -61,22 +61,25 @@ int menu_num = 1, sub_menu = 1;
   * @param intervalo : a quantidade de tempo a esperar desde o pressionar do botão
   * @return novoValor : valor atual do botão
 */
-int debounce(int pin, int estadoBotao, int intervaloDebouncing){
-  // previousReading = currentReading;
-  int novoValor = digitalRead(pin);
-  if (novoValor != estadoBotao){
+bool debounce(int pin, int posicaoBotao, int intervaloDebouncing)
+{
+  int novoValor;
+  leituraAnteriorDebounce[posicaoBotao] = leituraAtualDebounce[posicaoBotao];
+  novoValor = digitalRead(pin);
+  if (novoValor != leituraAtualDebounce[posicaoBotao])
+  {
     delay(intervaloDebouncing);
     novoValor = digitalRead(pin);
-    if (novoValor != estadoBotao){
-      estadoBotao = novoValor;
+    if (novoValor != leituraAtualDebounce[posicaoBotao])
+    {
+      leituraAtualDebounce[posicaoBotao] = novoValor;
     }
-    // return novoValor;
-      
-   if ((novoValor == HIGH) && (estadoBotao == LOW)) {
-     return true;
-   }
-   return false;
   }
+  if ((leituraAnteriorDebounce[posicaoBotao] == HIGH) && (leituraAtualDebounce[posicaoBotao]) == LOW)
+  {
+    return true;
+  }
+  return false;
 }
 
 // =============================================================================================================
@@ -101,7 +104,7 @@ void setup()
 void loop()
 {
   tempoAtual = millis();
-  keyboard();
+  capturaBotao();
 
   switch (menu_num)
   {
@@ -125,45 +128,40 @@ void loop()
 } //end loop
 
 // =============================================================================================================
-// --- Desenvolvimento das Funções ---
-void keyboard()
+// --- Captura botão pressionado ---
+void capturaBotao()
 {
-    if (debounce(bt_r, leituraAnteriorDebounce[0], intervalo)) {
-    
-  }
-  if (!digitalRead(bt_r) && sub_menu == 1)
-  {    
-    delay(150);
-    if (menu_num <= menu_max)
+  if (debounce(bt_r, 0, intervalo) && sub_menu == 1)
+  {
+    Serial.print("Direita \n");
+    if (menu_num <= menu_max-1)
+    {
       menu_num += 1;
-
-  } //end bt_r
-
-  if (!digitalRead(bt_l) && sub_menu == 1)
+    }
+  }
+  if (debounce(bt_l, 1, intervalo) && sub_menu == 1)
   {
-    delay(150);
-    if (menu_num > 0)
+    Serial.print("Esquerda \n");
+    if (menu_num > 1)
       menu_num -= 1;
+  }
 
-  } //end bt_l
-
-  if (!digitalRead(bt_e))
+  if (debounce(bt_e, 2, intervalo))
   {
-    delay(150);
+    Serial.print("Enter \n");
     if (sub_menu <= 2)
       sub_menu += 1;
-
-  } //end bt_e
-
-  if (!digitalRead(bt_b))
+  }
+  if (debounce(bt_b, 3, intervalo))
   {
-    delay(150);
+    Serial.print("Back \n");
     if (sub_menu > 1)
       sub_menu -= 1;
-  } //end bt_b
+  }
+}
 
-} //end keyboard
 
+// Muda Numeros no menu
 void keyboardVariable(int *entrada)
 {
   //  while(true){
@@ -307,8 +305,10 @@ void menu5()
     {
       limpaEEPROM();
       lcd.setCursor(0, 0);
+      lcd.print("                       ");
       lcd.print("EEPROM Resetada");
       lcd.setCursor(0, 1);
+      lcd.print("                       ");
       lcd.print("                ");
       delay(1000);
       sub_menu = 1;
