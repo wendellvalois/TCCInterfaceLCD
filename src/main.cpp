@@ -12,11 +12,11 @@ dht DHT;
 #define bt_e 10 //botão enter
 #define bt_b 11 //botão voltar
 #define DHT11_PIN 5
-#define NUMERO_BOTOES
 
 // =============================================================================================================
 // --- Constantes e Objetos ---
-#define menu_max 5 //número máximo de menus existentes
+#define NUMERO_BOTOES 4
+#define MENU_MAX 5 //número máximo de menus existentes
 // Inicialização do display sem módulo I2C
 /*
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
@@ -25,17 +25,22 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 // Inicialização do display com módulo I2C
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-int intervalo = 5;
+int intervaloColetaTemperaturaMinutos = 5; // tempo de intervalo a cada temperatura em minutos
 int enderecomMem;
 
 // Variáveis de temporizador
 unsigned long timerStart;
-unsigned long timerIntervalo;
+unsigned long timerIntervalo = 5 ; //em milisegundos
 unsigned long tempoAtual;
+unsigned long ultimaLeituraTemperatura = 0;
 
-// Button debounce variables
-int leituraAnteriorDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW}; // para todos os botões usados
+// Variaveis de botoes para debounce
+int leituraAnteriorDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW};
 int leituraAtualDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW};
+
+bool coletaIniciada = false;
+
+
 
 // =============================================================================================================
 // --- Protótipo das Funções ---
@@ -48,44 +53,22 @@ void menu5();
 byte lerEEPROMByte(int endereco);
 void escreveEEPROMByte(int endereco, byte valor);
 void limpaEEPROM();
+bool debounce(int pin, int posicaoBotao, int intervaloDebouncing);
+void esperaTempo(int milisegundos);
+int buscaUltimoEnderecoEEPROM();
 
 // =============================================================================================================
 // --- Variáveis Globais ---
 int menu_num = 1, sub_menu = 1;
 
-/*
-  * A função de debounce serve para descobrir se um botão foi pressionado
-  * 
-  * @param pin : O pino, ou botão a esperar
-  * @param estadoBotao : o estado anterior do botao
-  * @param intervalo : a quantidade de tempo a esperar desde o pressionar do botão
-  * @return novoValor : valor atual do botão
-*/
-bool debounce(int pin, int posicaoBotao, int intervaloDebouncing)
-{
-  int novoValor;
-  leituraAnteriorDebounce[posicaoBotao] = leituraAtualDebounce[posicaoBotao];
-  novoValor = digitalRead(pin);
-  if (novoValor != leituraAtualDebounce[posicaoBotao])
-  {
-    delay(intervaloDebouncing);
-    novoValor = digitalRead(pin);
-    if (novoValor != leituraAtualDebounce[posicaoBotao])
-    {
-      leituraAtualDebounce[posicaoBotao] = novoValor;
-    }
-  }
-  if ((leituraAnteriorDebounce[posicaoBotao] == HIGH) && (leituraAtualDebounce[posicaoBotao]) == LOW)
-  {
-    return true;
-  }
-  return false;
-}
-
 // =============================================================================================================
 // --- Configurações Iniciais ---
 void setup()
 {
+  Serial.begin(9600);
+  enderecomMem = buscaUltimoEnderecoEEPROM();
+  Serial.print("Ultima posicao memoria ");
+  Serial.print(enderecomMem);
   pinMode(bt_r, INPUT_PULLUP);
   pinMode(bt_l, INPUT_PULLUP);
   pinMode(bt_e, INPUT_PULLUP);
@@ -93,17 +76,28 @@ void setup()
 
   // Inicializa timer
   timerStart = millis();
-  timerIntervalo = 250;
-
-  lcd.begin();
-  Serial.begin(9600);
+  lcd.begin();  
 } //end setup
+
+/* Captura dados de temperatura a cada intervalo em minutos especificada e insere na EEPROM
+*/
+void capturaDados(){
+  if (coletaIniciada){
+    unsigned long tempoDecorridoColeta = millis() - ultimaLeituraTemperatura;
+    if(ultimaLeituraTemperatura == 0 || tempoDecorridoColeta > (unsigned int) intervaloColetaTemperaturaMinutos*60*1000){
+      escreveEEPROMByte(enderecomMem, DHT.temperature);
+      enderecomMem += 1;
+      ultimaLeituraTemperatura = millis();
+    }
+  }
+}
 
 // =============================================================================================================
 // --- Configurações Iniciais ---
 void loop()
 {
   tempoAtual = millis();
+  capturaDados();
   capturaBotao();
 
   switch (menu_num)
@@ -131,28 +125,28 @@ void loop()
 // --- Captura botão pressionado ---
 void capturaBotao()
 {
-  if (debounce(bt_r, 0, intervalo) && sub_menu == 1)
+  if (debounce(bt_r, 0, timerIntervalo) && sub_menu == 1)
   {
     Serial.print("Direita \n");
-    if (menu_num <= menu_max-1)
+    if (menu_num <= MENU_MAX-1)
     {
       menu_num += 1;
     }
   }
-  if (debounce(bt_l, 1, intervalo) && sub_menu == 1)
+  if (debounce(bt_l, 1, timerIntervalo) && sub_menu == 1)
   {
     Serial.print("Esquerda \n");
     if (menu_num > 1)
       menu_num -= 1;
   }
 
-  if (debounce(bt_e, 2, intervalo))
+  if (debounce(bt_e, 2, timerIntervalo))
   {
     Serial.print("Enter \n");
     if (sub_menu <= 2)
       sub_menu += 1;
   }
-  if (debounce(bt_b, 3, intervalo))
+  if (debounce(bt_b, 3, timerIntervalo))
   {
     Serial.print("Back \n");
     if (sub_menu > 1)
@@ -161,21 +155,21 @@ void capturaBotao()
 }
 
 
-// Muda Numeros no menu
+// Muda Numeros de variaveis no menu
 void keyboardVariable(int *entrada)
 {
   //  while(true){
 
   if (!digitalRead(bt_r))
   {
-    delay(150);
+    esperaTempo(150);
     *entrada += 1;
 
   } //end bt_r
 
   if (!digitalRead(bt_l))
   {
-    delay(150);
+    esperaTempo(150);
     if (*entrada >= 0)
       *entrada -= 1;
   } //end bt_l
@@ -219,23 +213,9 @@ void menu2()
     lcd.setCursor(0, 0);
     lcd.print(" Coleta iniciada ");
     lcd.setCursor(0, 1);
-    lcd.print("Segurar Esc para");
-    //modificar essa parte para armazenamento
-    //  escreveEEPROMByte(endereco, DHT.humidity);
-    enderecomMem += 1;
-    //O codigo abaixo faz esperar pelo tempo estabelecido na variavel "intervalo"
-    //O usuario pode quebrar a espera segurando esc a qualquer momento
-    //sem ter que esperar varios minutos, evitando usar threads
-    for (int i; i < intervalo * 60; i++)
-    {
-      delay(1000);
-      if (!digitalRead(bt_b))
-      {
-        sub_menu = 1;
-        break;
-      }
-    }
-    break;
+    lcd.print("Esc volta");
+    coletaIniciada = true;
+
   }
 } //end menu2
 
@@ -257,8 +237,8 @@ void menu3()
     for (size_t i = 0; i < EEPROM.length(); i++)
     {
       Serial.println(lerEEPROMByte(i));
-    }
-    delay(1000);
+    }    
+    // esperaTempo(1000);
     sub_menu = 1; //volta ao menu apos leitura
     break;
   }
@@ -278,9 +258,9 @@ void menu4()
     lcd.setCursor(0, 0);
     lcd.print("Defina intervalo");
     lcd.setCursor(0, 1);
-    lcd.print(intervalo);
+    lcd.print(intervaloColetaTemperaturaMinutos);
     lcd.print("min");
-    keyboardVariable(&intervalo);
+    keyboardVariable(&intervaloColetaTemperaturaMinutos);
     break;
   }  
 } //end menu4
@@ -299,23 +279,62 @@ void menu5()
     lcd.setCursor(0, 0);
     lcd.print("   Certeza?   ");
     lcd.setCursor(0, 1);
-    lcd.print("Press. enter confirma");
+    lcd.print("Press. enter");
 
-    if (!digitalRead(bt_e))
-    {
-      limpaEEPROM();
-      lcd.setCursor(0, 0);
-      lcd.print("                       ");
-      lcd.print("EEPROM Resetada");
-      lcd.setCursor(0, 1);
-      lcd.print("                       ");
-      lcd.print("                ");
-      delay(1000);
-      sub_menu = 1;
-    }
+      if (debounce(bt_e, 2, timerIntervalo))
+      {
+        Serial.print("Hello!");
+        lcd.setCursor(0, 0);
+        lcd.print("Resetando EEPROM");      
+        lcd.setCursor(0, 1);
+        lcd.print("                       ");     
+        limpaEEPROM();
+        lcd.setCursor(0, 0);
+        lcd.print("EEPROM Resetada");      
+        lcd.setCursor(0, 1);
+        lcd.print("                       ");      
+        esperaTempo(2000);
+        lcd.setCursor(0, 1);
+        lcd.print("                       ");
+        lcd.print("                ");      
+        sub_menu = 1;
+      }
+
     break;
   }
 } //end menu5
+
+// =============================================================================================================
+//DEBOUNCE
+/*
+  * A função de debounce serve para descobrir se um botão foi pressionado
+  * 
+  * @param pin : O pino, ou botão a esperar
+  * @param estadoBotao : o estado anterior do botao
+  * @param intervaloDebouncing : a quantidade de tempo a esperar desde o pressionar do botão
+  * @return novoValor : valor atual do botão
+*/
+bool debounce(int pin, int posicaoBotao, int intervaloDebouncing)
+{
+  int novoValor;
+  leituraAnteriorDebounce[posicaoBotao] = leituraAtualDebounce[posicaoBotao];
+  novoValor = digitalRead(pin);
+  if (novoValor != leituraAtualDebounce[posicaoBotao])
+  {
+    esperaTempo(intervaloDebouncing);
+    novoValor = digitalRead(pin);
+    if (novoValor != leituraAtualDebounce[posicaoBotao])
+    {
+      leituraAtualDebounce[posicaoBotao] = novoValor;
+    }
+  }
+  if ((leituraAnteriorDebounce[posicaoBotao] == HIGH) && (leituraAtualDebounce[posicaoBotao]) == LOW)
+  {
+    return true;
+  }
+  return false;
+}
+
 
 // =============================================================================================================
 //EEPROM
@@ -337,4 +356,24 @@ void limpaEEPROM()
 void escreveEEPROMByte(int endereco, byte valor) //byte: valores de -128 a 127
 {
   EEPROM.write(endereco, valor);
+}
+
+// Retorna utima posição/endereço da EEPROM como int
+int buscaUltimoEnderecoEEPROM() //byte: valores de -128 a 127
+{   for (size_t posicao = 0; posicao < EEPROM.length() ; posicao++)
+    {
+      if(lerEEPROMByte(posicao) == 0)  
+      {
+        return posicao;
+      }
+    }
+    Serial.print("Memoria cheia");
+    return (int) EEPROM.length();
+}
+
+// O mesmo que delay(milisegundos); porém sem interrupção
+void esperaTempo(int milisegundos)
+{      
+  unsigned long agora = millis();
+  while(millis() < agora + milisegundos){}
 }
