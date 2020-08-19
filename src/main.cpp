@@ -1,17 +1,17 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
-#include <dht.h>
 #include <EEPROM.h>
-
-dht DHT;
+#include <Wire.h>
+#include <DallasTemperature.h>
 
 // =============================================================================================================
 // --- Mapeamento de Hardware ---
+#define ONE_WIRE_BUS 2
+
 #define bt_r 8  //botão direita
 #define bt_l 9  //botão esquerda
 #define bt_e 10 //botão enter
 #define bt_b 11 //botão voltar
-#define DHT11_PIN 5
 
 // =============================================================================================================
 // --- Constantes e Objetos ---
@@ -24,6 +24,10 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 */
 // Inicialização do display com módulo I2C
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+//Inicialização de objetos OneWire para sensores de temperatura
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);	
 
 int intervaloColetaTemperaturaMinutos = 5; // tempo de intervalo a cada temperatura em minutos
 int enderecomMem;
@@ -65,6 +69,7 @@ int menu_num = 1, sub_menu = 1;
 // --- Configurações Iniciais ---
 void setup()
 {
+  sensors.begin();
   Serial.begin(9600);
   enderecomMem = buscaUltimoEnderecoEEPROM();
   Serial.print("Ultima posicao memoria ");
@@ -85,8 +90,8 @@ void capturaDados(){
   if (coletaIniciada){
     unsigned long tempoDecorridoColeta = millis() - ultimaLeituraTemperatura;
     if(tempoDecorridoColeta > (unsigned int) intervaloColetaTemperaturaMinutos*60*1000){
-      DHT.read11(DHT11_PIN);
-      escreveEEPROMByte(enderecomMem, DHT.temperature);
+      sensors.requestTemperatures(); 
+      escreveEEPROMByte(enderecomMem, sensors.getTempCByIndex(0));
       enderecomMem += 1;
       ultimaLeituraTemperatura = millis();
     }
@@ -187,12 +192,12 @@ void menu1()
     lcd.print("                ");
     break;
   case 2:
-    DHT.read11(DHT11_PIN);
+    sensors.requestTemperatures();
     lcd.setCursor(0, 0);
     lcd.print("  Temperatura   ");
     lcd.setCursor(0, 1);
-    lcd.print("    ");
-    lcd.print(DHT.temperature);
+    lcd.print("    ");    
+    lcd.print(sensors.getTempCByIndex(0));
     lcd.print((char)223);
     lcd.print("C");
 
@@ -378,7 +383,7 @@ int buscaUltimoEnderecoEEPROM() //byte: valores de -128 a 127
     return (int) EEPROM.length();
 }
 
-// O mesmo que delay(milisegundos); porém sem interrupção
+// O mesmo que delay(milisegundos); porém sem congelar processo
 void esperaTempo(int milisegundos)
 {      
   unsigned long agora = millis();
