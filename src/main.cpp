@@ -84,7 +84,8 @@ void setup()
 void capturaDados(){
   if (coletaIniciada){
     unsigned long tempoDecorridoColeta = millis() - ultimaLeituraTemperatura;
-    if(ultimaLeituraTemperatura == 0 || tempoDecorridoColeta > (unsigned int) intervaloColetaTemperaturaMinutos*60*1000){
+    if(tempoDecorridoColeta > (unsigned int) intervaloColetaTemperaturaMinutos*60*1000){
+      DHT.read11(DHT11_PIN);
       escreveEEPROMByte(enderecomMem, DHT.temperature);
       enderecomMem += 1;
       ultimaLeituraTemperatura = millis();
@@ -309,10 +310,10 @@ void menu5()
 /*
   * A função de debounce serve para descobrir se um botão foi pressionado
   * 
-  * @param pin : O pino, ou botão a esperar
-  * @param estadoBotao : o estado anterior do botao
-  * @param intervaloDebouncing : a quantidade de tempo a esperar desde o pressionar do botão
-  * @return novoValor : valor atual do botão
+  * @param pin O pino, ou botão a esperar
+  * @param posicaoBotao posicao do botao nos array leituraAnteriorDebounce e leituraAtualDebounce
+  * @param intervaloDebouncing a quantidade de tempo a esperar desde o pressionar do botão
+  * @return true caso tenha detectado botao pressionado false caso contrario
 */
 bool debounce(int pin, int posicaoBotao, int intervaloDebouncing)
 {
@@ -356,11 +357,17 @@ void limpaEEPROM()
 void escreveEEPROMByte(int endereco, byte valor) //byte: valores de -128 a 127
 {
   EEPROM.write(endereco, valor);
+  Serial.print("Inserindo valores na EEPROM:");
+  Serial.print(valor);
+  Serial.print(" ");
+  Serial.print(endereco);
+  Serial.println();
+
 }
 
 // Retorna utima posição/endereço da EEPROM como int
 int buscaUltimoEnderecoEEPROM() //byte: valores de -128 a 127
-{   for (size_t posicao = 0; posicao < EEPROM.length() ; posicao++)
+{   for (size_t posicao = 2; posicao < EEPROM.length() ; posicao++)
     {
       if(lerEEPROMByte(posicao) == 0)  
       {
