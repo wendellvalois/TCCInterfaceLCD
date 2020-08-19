@@ -367,7 +367,7 @@ void escreveEEPROMByte(int endereco, byte valor) //byte: valores de -128 a 127
 
 // Retorna utima posição/endereço da EEPROM como int
 int buscaUltimoEnderecoEEPROM() //byte: valores de -128 a 127
-{   for (size_t posicao = 2; posicao < EEPROM.length() ; posicao++)
+{   for (size_t posicao = 0; posicao < EEPROM.length() ; posicao++)
     {
       if(lerEEPROMByte(posicao) == 0)  
       {
