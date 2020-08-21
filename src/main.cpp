@@ -8,10 +8,10 @@
 // --- Mapeamento de Hardware ---
 #define ONE_WIRE_BUS 2
 
-#define bt_r 8  //botão direita
+#define bt_r 10  //botão direita
 #define bt_l 9  //botão esquerda
-#define bt_e 10 //botão enter
-#define bt_b 11 //botão voltar
+#define bt_e 8 //botão enter
+#define bt_b 7 //botão voltar
 
 // =============================================================================================================
 // --- Constantes e Objetos ---
@@ -194,10 +194,22 @@ void menu1()
   case 2:
     sensors.requestTemperatures();
     lcd.setCursor(0, 0);
-    lcd.print("  Temperatura   ");
-    lcd.setCursor(0, 1);
-    lcd.print("    ");    
+    // lcd.print("  Temperatura   ");
     lcd.print(sensors.getTempCByIndex(0));
+    lcd.print((char)223);
+    lcd.print("C  ");
+
+    lcd.print(sensors.getTempCByIndex(1));
+    lcd.print((char)223);
+    lcd.print("C");
+
+    lcd.setCursor(0, 1);
+    // lcd.print("    ");    
+    lcd.print(sensors.getTempCByIndex(2));
+    lcd.print((char)223);
+    lcd.print("C  ");
+
+    lcd.print(sensors.getTempCByIndex(3));
     lcd.print((char)223);
     lcd.print("C");
 
