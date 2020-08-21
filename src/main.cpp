@@ -13,6 +13,13 @@
 #define bt_e 8 //botão enter
 #define bt_b 7 //botão voltar
 
+//Sensores de temperatura: Endereços unicos 64-bit atribuidos a cada de fabrica
+
+uint8_t sensor1[8] = { 0x28, 0x19, 0x00, 0x00, 0xC8, 0xEE, 0x00, 0x0C };
+uint8_t sensor2[8] = { 0x28, 0xFF, 0x64, 0x18, 0x99, 0x09, 0x81, 0xA4 };
+uint8_t sensor3[8] = { 0x28, 0xFF, 0x64, 0x18, 0x98, 0x68, 0xDF, 0x55 };
+uint8_t sensor4[8] = { 0x28, 0xFF, 0x64, 0x18, 0x99, 0x3D, 0xA5, 0xF0 };
+
 // =============================================================================================================
 // --- Constantes e Objetos ---
 #define NUMERO_BOTOES 4
@@ -28,6 +35,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 //Inicialização de objetos OneWire para sensores de temperatura
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);	
+DeviceAddress Thermometer;
 
 int intervaloColetaTemperaturaMinutos = 5; // tempo de intervalo a cada temperatura em minutos
 int enderecomMem;
@@ -60,6 +68,7 @@ void limpaEEPROM();
 bool debounce(int pin, int posicaoBotao, int intervaloDebouncing);
 void esperaTempo(int milisegundos);
 int buscaUltimoEnderecoEEPROM();
+void printAddress(DeviceAddress deviceAddress);
 
 // =============================================================================================================
 // --- Variáveis Globais ---
@@ -73,16 +82,46 @@ void setup()
   Serial.begin(9600);
   enderecomMem = buscaUltimoEnderecoEEPROM();
   Serial.print("Ultima posicao memoria ");
-  Serial.print(enderecomMem);
+  Serial.println(enderecomMem);
   pinMode(bt_r, INPUT_PULLUP);
   pinMode(bt_l, INPUT_PULLUP);
   pinMode(bt_e, INPUT_PULLUP);
   pinMode(bt_b, INPUT_PULLUP);
 
+  // Imprime quantidade de sensores de temperatura
+  int deviceCount = sensors.getDeviceCount();
+  Serial.print(deviceCount, DEC);
+  Serial.println(" devices.");
+  Serial.println("");
+
+  // Imprime endereços de sensores
+  Serial.println("Printing addresses...");
+  for (int i = 0;  i < deviceCount;  i++)
+  {
+    Serial.print("Sensor ");
+    Serial.print(i+1);
+    Serial.print(" : ");
+    sensors.getAddress(Thermometer, i);
+    printAddress(Thermometer);
+  }
+
   // Inicializa timer
   timerStart = millis();
   lcd.begin();  
 } //end setup
+
+
+void printAddress(DeviceAddress deviceAddress)
+{ 
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    Serial.print("0x");
+    if (deviceAddress[i] < 0x10) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+    if (i < 7) Serial.print(", ");
+  }
+  Serial.println("");
+}
 
 /* Captura dados de temperatura a cada intervalo em minutos especificada e insere na EEPROM
 */
@@ -195,21 +234,22 @@ void menu1()
     sensors.requestTemperatures();
     lcd.setCursor(0, 0);
     // lcd.print("  Temperatura   ");
-    lcd.print(sensors.getTempCByIndex(0));
+    // lcd.print(sensors.getTempCByIndex(0));
+    lcd.print(sensors.getTempC(sensor1));    
     lcd.print((char)223);
     lcd.print("C  ");
 
-    lcd.print(sensors.getTempCByIndex(1));
+    lcd.print(sensors.getTempC(sensor2));
     lcd.print((char)223);
     lcd.print("C");
 
     lcd.setCursor(0, 1);
     // lcd.print("    ");    
-    lcd.print(sensors.getTempCByIndex(2));
+    lcd.print(sensors.getTempC(sensor3));
     lcd.print((char)223);
     lcd.print("C  ");
 
-    lcd.print(sensors.getTempCByIndex(3));
+    lcd.print(sensors.getTempC(sensor4));
     lcd.print((char)223);
     lcd.print("C");
 
