@@ -3,6 +3,8 @@
 #include <EEPROM.h>
 #include <Wire.h>
 #include <DallasTemperature.h>
+#include <SPI.h>
+#include <SD.h>
 
 // =============================================================================================================
 // --- Mapeamento de Hardware ---
@@ -20,11 +22,13 @@ uint8_t sensor2[8] = { 0x28, 0xFF, 0x64, 0x18, 0x99, 0x09, 0x81, 0xA4 };
 uint8_t sensor3[8] = { 0x28, 0xFF, 0x64, 0x18, 0x98, 0x68, 0xDF, 0x55 };
 uint8_t sensor4[8] = { 0x28, 0xFF, 0x64, 0x18, 0x99, 0x3D, 0xA5, 0xF0 };
 
+uint8_t* sensores[] = {sensor1, sensor2, sensor3, sensor4};
+
 // =============================================================================================================
 // --- Constantes e Objetos ---
 #define NUMERO_BOTOES 4
-#define MENU_MAX 5 //número máximo de menus existentes
-// Inicialização do display sem módulo I2C
+#define MENU_MAX 6 //número máximo de menus existentes
+// Código para inicialização do display sem módulo I2C
 /*
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
@@ -36,6 +40,9 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);	
 DeviceAddress Thermometer;
+
+// Para cartão SD
+File myFile;
 
 int intervaloColetaTemperaturaMinutos = 5; // tempo de intervalo a cada temperatura em minutos
 int enderecomMem;
@@ -52,7 +59,8 @@ int leituraAtualDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW};
 
 bool coletaIniciada = false;
 
-
+int sensoresAtivos = 4;
+char nomeArquivoSD[] = {"captura1.txt"};
 
 // =============================================================================================================
 // --- Protótipo das Funções ---
@@ -62,6 +70,7 @@ void menu2();
 void menu3();
 void menu4();
 void menu5();
+void menu6();
 byte lerEEPROMByte(int endereco);
 void escreveEEPROMByte(int endereco, byte valor);
 void limpaEEPROM();
@@ -69,6 +78,8 @@ bool debounce(int pin, int posicaoBotao, int intervaloDebouncing);
 void esperaTempo(int milisegundos);
 int buscaUltimoEnderecoEEPROM();
 void printAddress(DeviceAddress deviceAddress);
+void escreveSD(int sensor);
+void lerSD();
 
 // =============================================================================================================
 // --- Variáveis Globais ---
@@ -105,6 +116,12 @@ void setup()
     printAddress(Thermometer);
   }
 
+  if (!SD.begin(4)) {
+    Serial.println("Falha em inicializar cartão de memória");
+    while (1);
+  }
+  Serial.println("Cartão de memória positivo e operante.");  
+
   // Inicializa timer
   timerStart = millis();
   lcd.begin();  
@@ -129,9 +146,15 @@ void capturaDados(){
   if (coletaIniciada){
     unsigned long tempoDecorridoColeta = millis() - ultimaLeituraTemperatura;
     if(tempoDecorridoColeta > (unsigned int) intervaloColetaTemperaturaMinutos*60*1000){
-      sensors.requestTemperatures(); 
-      escreveEEPROMByte(enderecomMem, sensors.getTempCByIndex(0));
-      enderecomMem += 1;
+      sensors.requestTemperatures();
+      for (int i = 0; i < sensoresAtivos; i++)
+      {
+        escreveSD(i);
+      }
+      // escreveEEPROMByte(enderecomMem, sensors.getTempCByIndex(0));
+      // enderecomMem += 1;
+      
+      
       ultimaLeituraTemperatura = millis();
     }
   }
@@ -162,6 +185,9 @@ void loop()
   case 5:
     menu5();
     break;
+  // case 6:
+  //   menu6();
+  //   break;
   } //end switch
 
 } //end loop
@@ -219,6 +245,8 @@ void keyboardVariable(int *entrada)
       *entrada -= 1;
   } //end bt_l
 }
+// ====================================================================================
+// --- MENUS
 
 void menu1()
 {
@@ -292,10 +320,13 @@ void menu3()
     lcd.print("Verifique monitor");
     lcd.setCursor(0, 1);
     lcd.print("              ");
-    for (size_t i = 0; i < EEPROM.length(); i++)
-    {
-      Serial.println(lerEEPROMByte(i));
-    }    
+    lerSD();
+
+    // for (size_t i = 0; i < EEPROM.length(); i++)
+    // {
+    //   Serial.println(lerEEPROMByte(i));
+    // }    
+
     // esperaTempo(1000);
     sub_menu = 1; //volta ao menu apos leitura
     break;
@@ -329,13 +360,40 @@ void menu5()
   {
   case 1:
     lcd.setCursor(0, 0);
-    lcd.print("< Limpar EEPROM  ");
+    lcd.print("<Mudar Arquivo >");
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    break;
+  case 2:
+    int numeroArquivo = 1;
+    // "captura1.txt"
+    lcd.setCursor(0, 0);
+    lcd.print("Numero arquivo");
+    lcd.setCursor(0, 1);
+    lcd.print(numeroArquivo);
+    keyboardVariable(&numeroArquivo);
+    char buffer[50];
+    *nomeArquivoSD = sprintf(buffer, "captura%d.txt", numeroArquivo);
+
+    break;
+  }  
+} //end menu5
+
+void menu6()
+{
+  
+  switch (sub_menu)
+  {
+  case 1:
+    lcd.setCursor(0, 0);
+    lcd.print("<Deletar captura  ");
     lcd.setCursor(0, 1);
     lcd.print("                ");
     break;
   case 2:
     lcd.setCursor(0, 0);
-    lcd.print("   Certeza?   ");
+    lcd.print("Del:");
+    lcd.print(nomeArquivoSD);
     lcd.setCursor(0, 1);
     lcd.print("Press. enter");
 
@@ -343,12 +401,13 @@ void menu5()
       {
         Serial.print("Hello!");
         lcd.setCursor(0, 0);
-        lcd.print("Resetando EEPROM");      
+        lcd.print("Deletar arquivo?");      
         lcd.setCursor(0, 1);
         lcd.print("                       ");     
-        limpaEEPROM();
+        // limpaEEPROM();
+        SD.remove(nomeArquivoSD);
         lcd.setCursor(0, 0);
-        lcd.print("EEPROM Resetada");      
+        lcd.print("Captura Deletada");      
         lcd.setCursor(0, 1);
         lcd.print("                       ");      
         esperaTempo(2000);
@@ -359,8 +418,10 @@ void menu5()
       }
 
     break;
+    
   }
-} //end menu5
+  
+} //end menu6
 
 // =============================================================================================================
 //DEBOUNCE
@@ -391,6 +452,47 @@ bool debounce(int pin, int posicaoBotao, int intervaloDebouncing)
     return true;
   }
   return false;
+}
+
+// =============================================================================================================
+//SD
+void escreveSD(int sensor){  
+  myFile = SD.open(nomeArquivoSD, FILE_WRITE);
+  // if the file opened okay, write to it:
+  if (myFile) {
+    Serial.print("Escrevendo no cartão...");
+    myFile.print("termometro ");
+    myFile.print(sensor + 1);
+    myFile.print(" ");
+    myFile.println(sensors.getTempC(sensores[sensor]));
+    // close the file:
+    myFile.close();
+    Serial.println("done.");
+  } else {
+    // if the file didn't open, print an error:
+    Serial.print("erro ao abrir arquivo captura.txt");
+    Serial.println(nomeArquivoSD);
+  }
+
+}
+
+void lerSD(){
+    // re-open the file for reading:
+  myFile = SD.open(nomeArquivoSD);
+  if (myFile) {
+    Serial.println("captura.txt:");
+
+    // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    // close the file:
+    myFile.close();
+  } else {
+    // if the file didn't open, print an error:
+    Serial.print("erro ao abrir arquivo captura.txt");
+    Serial.println(nomeArquivoSD);
+  }
 }
 
 

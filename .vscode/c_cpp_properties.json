@@ -9,6 +9,8 @@
             "includePath": [
                 "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/include",
                 "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/src",
+                "/Users/wendellvalois/.platformio/lib/SD/src",
+                "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/lib/LiquidCrystal-I2C",
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
@@ -18,7 +20,6 @@
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/variants/standard",
                 "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/lib/DHTlib",
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/HID/src",
-                "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
                 "/Users/wendellvalois/.platformio/packages/tool-unity",
                 ""
@@ -28,6 +29,8 @@
                 "path": [
                     "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/include",
                     "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/src",
+                    "/Users/wendellvalois/.platformio/lib/SD/src",
+                    "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/lib/LiquidCrystal-I2C",
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
@@ -37,7 +40,6 @@
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/variants/standard",
                     "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/lib/DHTlib",
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/HID/src",
-                    "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
                     "/Users/wendellvalois/.platformio/packages/tool-unity",
                     ""
