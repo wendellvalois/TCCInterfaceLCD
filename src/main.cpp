@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
-#include <EEPROM.h>
 #include <Wire.h>
 #include <DallasTemperature.h>
 #include <SPI.h>
@@ -45,7 +44,6 @@ DeviceAddress Thermometer;
 File myFile;
 
 int intervaloColetaTemperaturaMinutos = 5; // tempo de intervalo a cada temperatura em minutos
-int enderecomMem;
 
 // Variáveis de temporizador
 unsigned long timerStart;
@@ -60,7 +58,7 @@ int leituraAtualDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW};
 bool coletaIniciada = false;
 
 int sensoresAtivos = 4;
-char nomeArquivoSD[] = {"captura1.txt"};
+// String nomeArquivoSD = "captura1.txt";
 
 // =============================================================================================================
 // --- Protótipo das Funções ---
@@ -71,12 +69,9 @@ void menu3();
 void menu4();
 void menu5();
 void menu6();
-byte lerEEPROMByte(int endereco);
-void escreveEEPROMByte(int endereco, byte valor);
-void limpaEEPROM();
+// void menu7();
 bool debounce(int pin, int posicaoBotao, int intervaloDebouncing);
 void esperaTempo(int milisegundos);
-int buscaUltimoEnderecoEEPROM();
 void printAddress(DeviceAddress deviceAddress);
 void escreveSD(int sensor);
 void lerSD();
@@ -91,9 +86,6 @@ void setup()
 {
   sensors.begin();
   Serial.begin(9600);
-  enderecomMem = buscaUltimoEnderecoEEPROM();
-  Serial.print("Ultima posicao memoria ");
-  Serial.println(enderecomMem);
   pinMode(bt_r, INPUT_PULLUP);
   pinMode(bt_l, INPUT_PULLUP);
   pinMode(bt_e, INPUT_PULLUP);
@@ -119,8 +111,10 @@ void setup()
   if (!SD.begin(4)) {
     Serial.println("Falha em inicializar cartão de memória");
     while (1);
-  }
-  Serial.println("Cartão de memória positivo e operante.");  
+  }else
+  {
+    Serial.println("Cartão de memória positivo e operante.");  
+  } 
 
   // Inicializa timer
   timerStart = millis();
@@ -140,7 +134,7 @@ void printAddress(DeviceAddress deviceAddress)
   Serial.println("");
 }
 
-/* Captura dados de temperatura a cada intervalo em minutos especificada e insere na EEPROM
+/* Captura dados de temperatura a cada intervalo em minutos especificada e insere no cartão SD
 */
 void capturaDados(){
   if (coletaIniciada){
@@ -151,10 +145,6 @@ void capturaDados(){
       {
         escreveSD(i);
       }
-      // escreveEEPROMByte(enderecomMem, sensors.getTempCByIndex(0));
-      // enderecomMem += 1;
-      
-      
       ultimaLeituraTemperatura = millis();
     }
   }
@@ -185,8 +175,11 @@ void loop()
   case 5:
     menu5();
     break;
-  // case 6:
-  //   menu6();
+  case 6:
+    menu6();
+    break;
+  // case 7:
+  //   menu7();
   //   break;
   } //end switch
 
@@ -224,7 +217,6 @@ void capturaBotao()
       sub_menu -= 1;
   }
 }
-
 
 // Muda Numeros de variaveis no menu
 void keyboardVariable(int *entrada)
@@ -321,12 +313,6 @@ void menu3()
     lcd.setCursor(0, 1);
     lcd.print("              ");
     lerSD();
-
-    // for (size_t i = 0; i < EEPROM.length(); i++)
-    // {
-    //   Serial.println(lerEEPROMByte(i));
-    // }    
-
     // esperaTempo(1000);
     sub_menu = 1; //volta ao menu apos leitura
     break;
@@ -354,7 +340,82 @@ void menu4()
   }  
 } //end menu4
 
+
 void menu5()
+{
+  switch (sub_menu)
+  {
+  case 1:
+    lcd.setCursor(0, 0);
+    lcd.print("<Num. Sensores >");
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    break;
+  case 2:
+    lcd.setCursor(0, 0);
+    lcd.print("Defina a qtd.   ");
+    lcd.setCursor(0, 1);
+    lcd.print(sensoresAtivos);
+    lcd.print(" sensores");
+    keyboardVariable(&sensoresAtivos);
+    break;
+  }  
+} //end menu5
+
+
+void menu6()
+{  
+  switch (sub_menu)
+  {
+  case 1:
+    lcd.setCursor(0, 0);
+    lcd.print("<Deletar captura  ");
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    break;
+  case 2:
+    lcd.setCursor(0, 0);
+    lcd.print("Del:");
+    lcd.print("captura1.txt");
+    lcd.setCursor(0, 1);
+    lcd.print("Press. enter");
+
+      if (debounce(bt_e, 2, timerIntervalo))
+      {
+        lcd.setCursor(0, 0);
+        lcd.print("Deletar arquivo?");      
+        lcd.setCursor(0, 1);
+        lcd.print("                       ");
+        if(SD.exists("captura1.txt")){
+          SD.remove("captura1.txt");
+          lcd.setCursor(0, 0);
+          lcd.print("Captura Deletada");
+        }else
+        {
+          lcd.setCursor(0, 0);
+          lcd.print("Captura inexistente");
+        }
+        lcd.setCursor(0, 1);
+        lcd.print("                       ");      
+        esperaTempo(2000);
+        lcd.setCursor(0, 1);
+        lcd.print("                       ");
+        lcd.print("                ");      
+        sub_menu = 1;
+      }
+
+    break;
+    
+  }
+  
+} //end menu6
+
+
+
+
+/*
+
+void menu7()
 {
   switch (sub_menu)
   {
@@ -372,56 +433,16 @@ void menu5()
     lcd.setCursor(0, 1);
     lcd.print(numeroArquivo);
     keyboardVariable(&numeroArquivo);
-    char buffer[50];
-    *nomeArquivoSD = sprintf(buffer, "captura%d.txt", numeroArquivo);
+    // char buffer[50];
+    // nomeArquivoSD = "captura" + (String)numeroArquivo + ".txt";
+    // sprintf(buffer, "captura%d.txt", numeroArquivo);
 
     break;
   }  
-} //end menu5
+} //end menu7
 
-void menu6()
-{
-  
-  switch (sub_menu)
-  {
-  case 1:
-    lcd.setCursor(0, 0);
-    lcd.print("<Deletar captura  ");
-    lcd.setCursor(0, 1);
-    lcd.print("                ");
-    break;
-  case 2:
-    lcd.setCursor(0, 0);
-    lcd.print("Del:");
-    lcd.print(nomeArquivoSD);
-    lcd.setCursor(0, 1);
-    lcd.print("Press. enter");
+*/
 
-      if (debounce(bt_e, 2, timerIntervalo))
-      {
-        Serial.print("Hello!");
-        lcd.setCursor(0, 0);
-        lcd.print("Deletar arquivo?");      
-        lcd.setCursor(0, 1);
-        lcd.print("                       ");     
-        // limpaEEPROM();
-        SD.remove(nomeArquivoSD);
-        lcd.setCursor(0, 0);
-        lcd.print("Captura Deletada");      
-        lcd.setCursor(0, 1);
-        lcd.print("                       ");      
-        esperaTempo(2000);
-        lcd.setCursor(0, 1);
-        lcd.print("                       ");
-        lcd.print("                ");      
-        sub_menu = 1;
-      }
-
-    break;
-    
-  }
-  
-} //end menu6
 
 // =============================================================================================================
 //DEBOUNCE
@@ -457,30 +478,30 @@ bool debounce(int pin, int posicaoBotao, int intervaloDebouncing)
 // =============================================================================================================
 //SD
 void escreveSD(int sensor){  
-  myFile = SD.open(nomeArquivoSD, FILE_WRITE);
+  // Serial.print("Iniciando escrita no cartão...");
+  myFile = SD.open("captura1.txt", FILE_WRITE);
   // if the file opened okay, write to it:
   if (myFile) {
-    Serial.print("Escrevendo no cartão...");
+    Serial.print("Escrevendo no cartão... ");
     myFile.print("termometro ");
     myFile.print(sensor + 1);
     myFile.print(" ");
     myFile.println(sensors.getTempC(sensores[sensor]));
     // close the file:
     myFile.close();
-    Serial.println("done.");
+    Serial.println("Feito!");
   } else {
     // if the file didn't open, print an error:
-    Serial.print("erro ao abrir arquivo captura.txt");
-    Serial.println(nomeArquivoSD);
+    Serial.print("erro ao abrir arquivo ");
+    Serial.println("captura1.txt");
   }
-
 }
 
 void lerSD(){
     // re-open the file for reading:
-  myFile = SD.open(nomeArquivoSD);
+  myFile = SD.open("captura1.txt");
   if (myFile) {
-    Serial.println("captura.txt:");
+    Serial.println("captura1.txt");
 
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
@@ -490,51 +511,9 @@ void lerSD(){
     myFile.close();
   } else {
     // if the file didn't open, print an error:
-    Serial.print("erro ao abrir arquivo captura.txt");
-    Serial.println(nomeArquivoSD);
+    Serial.print("erro ao abrir arquivo ");
+    Serial.println("captura1.txt");
   }
-}
-
-
-// =============================================================================================================
-//EEPROM
-
-byte lerEEPROMByte(int endereco) //byte: valores de -128 a 127
-{
-  byte hiByte = EEPROM.read(endereco);
-  return hiByte;
-}
-
-void limpaEEPROM()
-{
-  for (unsigned int i = 0; i < EEPROM.length(); i++)
-  {
-    EEPROM.write(i, 0);
-  }
-}
-
-void escreveEEPROMByte(int endereco, byte valor) //byte: valores de -128 a 127
-{
-  EEPROM.write(endereco, valor);
-  Serial.print("Inserindo valores na EEPROM:");
-  Serial.print(valor);
-  Serial.print(" ");
-  Serial.print(endereco);
-  Serial.println();
-
-}
-
-// Retorna utima posição/endereço da EEPROM como int
-int buscaUltimoEnderecoEEPROM() //byte: valores de -128 a 127
-{   for (size_t posicao = 0; posicao < EEPROM.length() ; posicao++)
-    {
-      if(lerEEPROMByte(posicao) == 0)  
-      {
-        return posicao;
-      }
-    }
-    Serial.print("Memoria cheia");
-    return (int) EEPROM.length();
 }
 
 // O mesmo que delay(milisegundos); porém sem congelar processo
