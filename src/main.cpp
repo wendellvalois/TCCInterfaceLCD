@@ -9,19 +9,19 @@
 // --- Mapeamento de Hardware ---
 #define ONE_WIRE_BUS 2
 
-#define bt_r 10  //botão direita
+#define bt_r 10 //botão direita
 #define bt_l 9  //botão esquerda
-#define bt_e 8 //botão enter
-#define bt_b 7 //botão voltar
+#define bt_e 8  //botão enter
+#define bt_b 7  //botão voltar
 
 //Sensores de temperatura: Endereços unicos 64-bit atribuidos a cada de fabrica
 
-uint8_t sensor1[8] = { 0x28, 0x19, 0x00, 0x00, 0xC8, 0xEE, 0x00, 0x0C };
-uint8_t sensor2[8] = { 0x28, 0xFF, 0x64, 0x18, 0x99, 0x09, 0x81, 0xA4 };
-uint8_t sensor3[8] = { 0x28, 0xFF, 0x64, 0x18, 0x98, 0x68, 0xDF, 0x55 };
-uint8_t sensor4[8] = { 0x28, 0xFF, 0x64, 0x18, 0x99, 0x3D, 0xA5, 0xF0 };
+uint8_t sensor1[8] = {0x28, 0x19, 0x00, 0x00, 0xC8, 0xEE, 0x00, 0x0C};
+uint8_t sensor2[8] = {0x28, 0xFF, 0x64, 0x18, 0x99, 0x09, 0x81, 0xA4};
+uint8_t sensor3[8] = {0x28, 0xFF, 0x64, 0x18, 0x98, 0x68, 0xDF, 0x55};
+uint8_t sensor4[8] = {0x28, 0xFF, 0x64, 0x18, 0x99, 0x3D, 0xA5, 0xF0};
 
-uint8_t* sensores[] = {sensor1, sensor2, sensor3, sensor4};
+uint8_t *sensores[] = {sensor1, sensor2, sensor3, sensor4};
 
 // =============================================================================================================
 // --- Constantes e Objetos ---
@@ -37,23 +37,23 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 //Inicialização de objetos OneWire para sensores de temperatura
 OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);	
+DallasTemperature sensors(&oneWire);
 DeviceAddress Thermometer;
 
 // Para cartão SD
-File myFile;
+File arquivo;
 
 int intervaloColetaTemperaturaMinutos = 5; // tempo de intervalo a cada temperatura em minutos
 
 // Variáveis de temporizador
 unsigned long timerStart;
-unsigned long timerIntervalo = 5 ; //em milisegundos
+unsigned long timerIntervalo = 5; //em milisegundos
 unsigned long tempoAtual;
 unsigned long ultimaLeituraTemperatura = 0;
 
 // Variaveis de botoes para debounce
-int leituraAnteriorDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW};
-int leituraAtualDebounce[NUMERO_BOTOES] = {LOW,LOW,LOW,LOW};
+int leituraAnteriorDebounce[NUMERO_BOTOES] = {LOW, LOW, LOW, LOW};
+int leituraAtualDebounce[NUMERO_BOTOES] = {LOW, LOW, LOW, LOW};
 
 bool coletaIniciada = false;
 
@@ -63,12 +63,12 @@ int sensoresAtivos = 4;
 // =============================================================================================================
 // --- Protótipo das Funções ---
 void capturaBotao();
-void menu1();
-void menu2();
-void menu3();
-void menu4();
-void menu5();
-void menu6();
+void menu1(); // Temperatura em tempo real
+void menu2(); // Coleta de dados
+void menu3(); // Leitura de dados
+void menu4(); // Intervalo
+void menu5(); // Sensores
+void menu6(); // Deletar captura
 // void menu7();
 bool debounce(int pin, int posicaoBotao, int intervaloDebouncing);
 void esperaTempo(int milisegundos);
@@ -94,52 +94,59 @@ void setup()
   // Imprime quantidade de sensores de temperatura
   int deviceCount = sensors.getDeviceCount();
   Serial.print(deviceCount, DEC);
-  Serial.println(" devices.");
+  Serial.println(F(" devices."));
   Serial.println("");
 
   // Imprime endereços de sensores
-  Serial.println("Printing addresses...");
-  for (int i = 0;  i < deviceCount;  i++)
+  Serial.println(F("Printing addresses..."));
+  for (int i = 0; i < deviceCount; i++)
   {
-    Serial.print("Sensor ");
-    Serial.print(i+1);
+    Serial.print(F("Sensor "));
+    Serial.print(i + 1);
     Serial.print(" : ");
     sensors.getAddress(Thermometer, i);
     printAddress(Thermometer);
   }
 
-  if (!SD.begin(4)) {
-    Serial.println("Falha em inicializar cartão de memória");
-    while (1);
-  }else
+  if (!SD.begin(4))
   {
-    Serial.println("Cartão de memória positivo e operante.");  
-  } 
+    Serial.println(F("Falha em inicializar cartão de memória"));
+    // while (1);
+  }
+  else
+  {
+    Serial.println(F("Cartão de memória positivo e operante."));
+  }
 
   // Inicializa timer
   timerStart = millis();
-  lcd.begin();  
+  lcd.begin();
 } //end setup
 
-
 void printAddress(DeviceAddress deviceAddress)
-{ 
+{
   for (uint8_t i = 0; i < 8; i++)
   {
     Serial.print("0x");
-    if (deviceAddress[i] < 0x10) Serial.print("0");
+    if (deviceAddress[i] < 0x10)
+      Serial.print("0");
     Serial.print(deviceAddress[i], HEX);
-    if (i < 7) Serial.print(", ");
+    if (i < 7)
+      Serial.print(", ");
   }
   Serial.println("");
 }
 
 /* Captura dados de temperatura a cada intervalo em minutos especificada e insere no cartão SD
 */
-void capturaDados(){
-  if (coletaIniciada){
+void capturaDados()
+{
+  if (coletaIniciada)
+  {
     unsigned long tempoDecorridoColeta = millis() - ultimaLeituraTemperatura;
-    if(tempoDecorridoColeta > (unsigned int) intervaloColetaTemperaturaMinutos*60*1000){
+    unsigned long intervaloMilisegundos = (unsigned long) intervaloColetaTemperaturaMinutos * 60 * 1000;
+    if (tempoDecorridoColeta > intervaloMilisegundos)
+    {
       sensors.requestTemperatures();
       for (int i = 0; i < sensoresAtivos; i++)
       {
@@ -178,9 +185,9 @@ void loop()
   case 6:
     menu6();
     break;
-  // case 7:
-  //   menu7();
-  //   break;
+    // case 7:
+    //   menu7();
+    //   break;
   } //end switch
 
 } //end loop
@@ -191,28 +198,28 @@ void capturaBotao()
 {
   if (debounce(bt_r, 0, timerIntervalo) && sub_menu == 1)
   {
-    Serial.print("Direita \n");
-    if (menu_num <= MENU_MAX-1)
+    Serial.print(F("Direita \n"));
+    if (menu_num <= MENU_MAX - 1)
     {
       menu_num += 1;
     }
   }
   if (debounce(bt_l, 1, timerIntervalo) && sub_menu == 1)
   {
-    Serial.print("Esquerda \n");
+    Serial.print(F("Esquerda \n"));
     if (menu_num > 1)
       menu_num -= 1;
   }
 
   if (debounce(bt_e, 2, timerIntervalo))
   {
-    Serial.print("Enter \n");
+    Serial.print(F("Enter \n"));
     if (sub_menu <= 2)
       sub_menu += 1;
   }
   if (debounce(bt_b, 3, timerIntervalo))
   {
-    Serial.print("Back \n");
+    Serial.print(F("Back \n"));
     if (sub_menu > 1)
       sub_menu -= 1;
   }
@@ -246,32 +253,32 @@ void menu1()
   {
   case 1:
     lcd.setCursor(0, 0);
-    lcd.print("  Temp. Atual  >");
+    lcd.print(F("  Temp. Atual  >"));
     lcd.setCursor(0, 1);
-    lcd.print("                ");
+    lcd.print(F("                "));
     break;
   case 2:
     sensors.requestTemperatures();
     lcd.setCursor(0, 0);
     // lcd.print("  Temperatura   ");
     // lcd.print(sensors.getTempCByIndex(0));
-    lcd.print(sensors.getTempC(sensor1));    
+    lcd.print(sensors.getTempC(sensor1));
     lcd.print((char)223);
-    lcd.print("C  ");
+    lcd.print(F("C  "));
 
     lcd.print(sensors.getTempC(sensor2));
     lcd.print((char)223);
-    lcd.print("C");
+    lcd.print(F("C"));
 
     lcd.setCursor(0, 1);
-    // lcd.print("    ");    
+    // lcd.print("    ");
     lcd.print(sensors.getTempC(sensor3));
     lcd.print((char)223);
-    lcd.print("C  ");
+    lcd.print(F("C  "));
 
     lcd.print(sensors.getTempC(sensor4));
     lcd.print((char)223);
-    lcd.print("C");
+    lcd.print(F("C"));
 
     break;
   }
@@ -283,17 +290,16 @@ void menu2()
   {
   case 1:
     lcd.setCursor(0, 0);
-    lcd.print("<Coletar Dados >");
+    lcd.print(F("<Coletar Dados >"));
     lcd.setCursor(0, 1);
-    lcd.print("                ");
+    lcd.print(F("                "));
     break;
   case 2:
     lcd.setCursor(0, 0);
-    lcd.print(" Coleta iniciada ");
+    lcd.print(F(" Coleta iniciada "));
     lcd.setCursor(0, 1);
-    lcd.print("Esc volta");
+    lcd.print(F("Esc volta"));
     coletaIniciada = true;
-
   }
 } //end menu2
 
@@ -303,15 +309,15 @@ void menu3()
   {
   case 1:
     lcd.setCursor(0, 0);
-    lcd.print("<  Ler dados   >");
+    lcd.print(F("<  Ler dados   >"));
     lcd.setCursor(0, 1);
-    lcd.print("                ");
+    lcd.print(F("                "));
     break;
   case 2:
     lcd.setCursor(0, 0);
-    lcd.print("Verifique monitor");
+    lcd.print(F("Verifique monitor"));
     lcd.setCursor(0, 1);
-    lcd.print("              ");
+    lcd.print(F("              "));
     lerSD();
     // esperaTempo(1000);
     sub_menu = 1; //volta ao menu apos leitura
@@ -325,21 +331,20 @@ void menu4()
   {
   case 1:
     lcd.setCursor(0, 0);
-    lcd.print("<  Intervalo   >");
+    lcd.print(F("<  Intervalo   >"));
     lcd.setCursor(0, 1);
-    lcd.print("                ");
+    lcd.print(F("                "));
     break;
   case 2:
     lcd.setCursor(0, 0);
-    lcd.print("Defina intervalo");
+    lcd.print(F("Defina intervalo"));
     lcd.setCursor(0, 1);
     lcd.print(intervaloColetaTemperaturaMinutos);
-    lcd.print("min");
+    lcd.print(F("min"));
     keyboardVariable(&intervaloColetaTemperaturaMinutos);
     break;
-  }  
+  }
 } //end menu4
-
 
 void menu5()
 {
@@ -347,71 +352,71 @@ void menu5()
   {
   case 1:
     lcd.setCursor(0, 0);
-    lcd.print("<Num. Sensores >");
+    lcd.print(F("<Num. Sensores >"));
     lcd.setCursor(0, 1);
-    lcd.print("                ");
+    lcd.print(F("                "));
     break;
   case 2:
     lcd.setCursor(0, 0);
-    lcd.print("Defina a qtd.   ");
+    lcd.print(F("Defina a qtd.   "));
     lcd.setCursor(0, 1);
     lcd.print(sensoresAtivos);
-    lcd.print(" sensores");
+    lcd.print(F(" sensores"));
     keyboardVariable(&sensoresAtivos);
     break;
-  }  
+  }
 } //end menu5
 
-
 void menu6()
-{  
+{
   switch (sub_menu)
   {
   case 1:
     lcd.setCursor(0, 0);
-    lcd.print("<Deletar captura  ");
+    lcd.print(F("<Deletar captura  "));
     lcd.setCursor(0, 1);
-    lcd.print("                ");
+    lcd.print(F("                "));
     break;
   case 2:
     lcd.setCursor(0, 0);
-    lcd.print("Del:");
-    lcd.print("captura1.txt");
+    lcd.print(F("Del:"));
+    lcd.print(F("captura1.txt"));
     lcd.setCursor(0, 1);
-    lcd.print("Press. enter");
+    lcd.print(F("Press. enter"));
 
-      if (debounce(bt_e, 2, timerIntervalo))
+    if (debounce(bt_e, 2, timerIntervalo))
+    {
+      // lcd.setCursor(0, 0);
+      // lcd.print("Deletar arquivo?");
+      // lcd.setCursor(0, 1);
+    // lcd.print(" Press Enter ");
+      if (SD.exists(F("captura1.txt")))
+      {
+        SD.remove(F("captura1.txt"));
+        lcd.setCursor(0, 0);
+        lcd.print(F("Captura Deletada"));
+        lcd.setCursor(0, 1);
+        lcd.print(F("                       "));
+      }
+      else
       {
         lcd.setCursor(0, 0);
-        lcd.print("Deletar arquivo?");      
+        lcd.print(F("Captura inexistente"));
         lcd.setCursor(0, 1);
-        lcd.print("                       ");
-        if(SD.exists("captura1.txt")){
-          SD.remove("captura1.txt");
-          lcd.setCursor(0, 0);
-          lcd.print("Captura Deletada");
-        }else
-        {
-          lcd.setCursor(0, 0);
-          lcd.print("Captura inexistente");
-        }
-        lcd.setCursor(0, 1);
-        lcd.print("                       ");      
-        esperaTempo(2000);
-        lcd.setCursor(0, 1);
-        lcd.print("                       ");
-        lcd.print("                ");      
-        sub_menu = 1;
+        lcd.print(F("                       "));
       }
+      lcd.setCursor(0, 1);
+      lcd.print(F("                       "));
+      esperaTempo(2000);
+      lcd.setCursor(0, 1);
+      lcd.print(F("                       "));
+      sub_menu = 1;
+    }
 
     break;
-    
   }
-  
+
 } //end menu6
-
-
-
 
 /*
 
@@ -442,7 +447,6 @@ void menu7()
 } //end menu7
 
 */
-
 
 // =============================================================================================================
 //DEBOUNCE
@@ -477,48 +481,59 @@ bool debounce(int pin, int posicaoBotao, int intervaloDebouncing)
 
 // =============================================================================================================
 //SD
-void escreveSD(int sensor){  
+void escreveSD(int sensor)
+{
   // Serial.print("Iniciando escrita no cartão...");
-  myFile = SD.open("captura1.txt", FILE_WRITE);
+  arquivo = SD.open(F("captura1.txt"), FILE_WRITE);
   // if the file opened okay, write to it:
-  if (myFile) {
-    Serial.print("Escrevendo no cartão... ");
-    myFile.print("termometro ");
-    myFile.print(sensor + 1);
-    myFile.print(" ");
-    myFile.println(sensors.getTempC(sensores[sensor]));
+  if (arquivo)
+  {
+    Serial.print(F("Escrevendo no cartão... "));
+    arquivo.print(F("termometro "));
+    arquivo.print(sensor + 1);
+    arquivo.print(F(" "));
+    arquivo.println(sensors.getTempC(sensores[sensor]));
     // close the file:
-    myFile.close();
-    Serial.println("Feito!");
-  } else {
+    arquivo.close();
+    Serial.println(F("Feito!"));
+  }
+  else
+  {
     // if the file didn't open, print an error:
-    Serial.print("erro ao abrir arquivo ");
-    Serial.println("captura1.txt");
+    Serial.print(F("erro ao abrir arquivo "));
+    Serial.println(F("captura1.txt"));
   }
 }
 
-void lerSD(){
-    // re-open the file for reading:
-  myFile = SD.open("captura1.txt");
-  if (myFile) {
-    Serial.println("captura1.txt");
+void lerSD()
+{
+  // re-open the file for reading:
+  arquivo = SD.open(F("captura1.txt"));
+  if (arquivo)
+  {
+    Serial.println(F("captura1.txt"));
 
     // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      Serial.write(myFile.read());
+    while (arquivo.available())
+    {
+      Serial.write(arquivo.read());
     }
     // close the file:
-    myFile.close();
-  } else {
+    arquivo.close();
+  }
+  else
+  {
     // if the file didn't open, print an error:
-    Serial.print("erro ao abrir arquivo ");
-    Serial.println("captura1.txt");
+    Serial.print(F("erro ao abrir arquivo "));
+    Serial.println(F("captura1.txt"));
   }
 }
 
 // O mesmo que delay(milisegundos); porém sem congelar processo
 void esperaTempo(int milisegundos)
-{      
+{
   unsigned long agora = millis();
-  while(millis() < agora + milisegundos){}
+  while (millis() < agora + milisegundos)
+  {
+  }
 }
