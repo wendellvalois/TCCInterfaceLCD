@@ -5,6 +5,16 @@
 #include <SPI.h>
 #include <SD.h>
 
+/*
+Nota: Várias strings do código estão em um F(). Exemplo: Serial.println(F("cadeia de caracter"))  
+dessa forma o valor fica armazenado na memória Flash (onde é armazenado o sketch) ao invés 
+de SRAM (memória dinâmica) que é mais importante pra o funcionamento do programa e onde é armazenada as
+variáveis globais. 
+Como o arduino Uno tem apenas 2kbytes de SRAM para variáveis tive que despejar strings na memória Flash que é de 32kbytes
+sem isso conflitos em tempo de execução estavam ocorrendo por falta de espaço SRAM, como manipulação de dados para cartão SD .
+Para mais informações: https://www.arduino.cc/en/tutorial/memory
+*/
+
 // =============================================================================================================
 // --- Mapeamento de Hardware ---
 #define ONE_WIRE_BUS 2
@@ -111,7 +121,11 @@ void setup()
   if (!SD.begin(4))
   {
     Serial.println(F("Falha em inicializar cartão de memória"));
-    // while (1);
+    lcd.setCursor(0, 0);
+    lcd.print(F("Falha no SD"));
+    lcd.setCursor(0, 1);
+    lcd.print(F("                "));
+    while (1);
   }
   else
   {
@@ -502,6 +516,11 @@ void escreveSD(int sensor)
     // if the file didn't open, print an error:
     Serial.print(F("erro ao abrir arquivo "));
     Serial.println(F("captura1.txt"));
+    lcd.setCursor(0, 0);
+    lcd.print(F("Erro no SD"));
+    lcd.setCursor(0, 1);
+    lcd.print(F("                "));
+    esperaTempo(10000);
   }
 }
 
