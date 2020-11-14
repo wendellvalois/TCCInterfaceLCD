@@ -52,3 +52,4 @@ Backup[ ]of[ ]*.numbers/
 .gcc-flags.json
 .vscode
 .vscode/c_cpp_properties.json
+.DS_Store

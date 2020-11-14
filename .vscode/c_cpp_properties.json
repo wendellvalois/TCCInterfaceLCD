@@ -18,6 +18,7 @@
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/cores/arduino",
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/variants/standard",
                 "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/lib/DHTlib",
+                "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/lib/Rtc_by_Makuna/src",
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/HID/src",
                 "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
@@ -38,6 +39,7 @@
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/cores/arduino",
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/variants/standard",
                     "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/lib/DHTlib",
+                    "/Users/wendellvalois/Developer/GitHub/TCCInterfaceLCD/lib/Rtc_by_Makuna/src",
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/HID/src",
                     "/Users/wendellvalois/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
@@ -46,7 +48,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=50001",
+                "PLATFORMIO=50002",
                 "ARDUINO_AVR_UNO",
                 "F_CPU=16000000L",
                 "ARDUINO_ARCH_AVR",

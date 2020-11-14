@@ -4,6 +4,8 @@
 #include <DallasTemperature.h>
 #include <SPI.h>
 #include <SD.h>
+// #include <ThreeWire.h>
+// #include <RtcDS1302.h>
 
 /*
 Nota: Várias strings do código estão em um F(). Exemplo: Serial.println(F("cadeia de caracter"))  
@@ -18,6 +20,11 @@ Para mais informações: https://www.arduino.cc/en/tutorial/memory
 // =============================================================================================================
 // --- Mapeamento de Hardware ---
 #define ONE_WIRE_BUS 2
+
+// Relógio
+// #define dat 5
+// #define clk 3
+// #define rst 6
 
 #define bt_r 10 //botão direita
 #define bt_l 9  //botão esquerda
@@ -37,6 +44,11 @@ uint8_t *sensores[] = {sensor1, sensor2, sensor3, sensor4};
 // --- Constantes e Objetos ---
 #define NUMERO_BOTOES 4
 #define MENU_MAX 6 //número máximo de menus existentes
+
+// // Inicialização de relógio
+// ThreeWire myWire(dat, clk, rst); // DAT, CLK, RST
+// RtcDS1302<ThreeWire> Rtc(myWire);
+
 // Código para inicialização do display sem módulo I2C
 /*
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
@@ -53,7 +65,7 @@ DeviceAddress Thermometer;
 // Para cartão SD
 File arquivo;
 
-int intervaloColetaTemperaturaMinutos = 5; // tempo de intervalo a cada temperatura em minutos
+int intervaloColetaTemperaturaMinutos = 1; // tempo de intervalo a cada temperatura em minutos
 
 // Variáveis de temporizador
 unsigned long timerStart;
@@ -66,6 +78,7 @@ int leituraAnteriorDebounce[NUMERO_BOTOES] = {LOW, LOW, LOW, LOW};
 int leituraAtualDebounce[NUMERO_BOTOES] = {LOW, LOW, LOW, LOW};
 
 bool coletaIniciada = false;
+bool inseridoHoraColetada = false;
 
 int sensoresAtivos = 4;
 // String nomeArquivoSD = "captura1.txt";
@@ -85,6 +98,7 @@ void esperaTempo(int milisegundos);
 void printAddress(DeviceAddress deviceAddress);
 void escreveSD(int sensor);
 void lerSD();
+// void escreveDateTime(const RtcDateTime& dt);
 
 // =============================================================================================================
 // --- Variáveis Globais ---
@@ -94,6 +108,12 @@ int menu_num = 1, sub_menu = 1;
 // --- Configurações Iniciais ---
 void setup()
 {
+  // Rtc.Begin();
+  // setTime(int seconds, int minutes, int hours, int dayofweek, int dayofmonth, int month, int year)
+  // Rtc.SetDateTime();
+  // Rtc.setTime(int 0, int 35, int 23, int 2, int 3, int 11, int 2020);
+  
+
   sensors.begin();
   Serial.begin(9600);
   pinMode(bt_r, INPUT_PULLUP);
@@ -108,7 +128,7 @@ void setup()
   Serial.println("");
 
   // Imprime endereços de sensores
-  Serial.println(F("Printing addresses..."));
+  Serial.println(F("Imprimindo endereços de sensores de temperatura detectados..."));
   for (int i = 0; i < deviceCount; i++)
   {
     Serial.print(F("Sensor "));
@@ -161,6 +181,13 @@ void capturaDados()
     unsigned long intervaloMilisegundos = (unsigned long) intervaloColetaTemperaturaMinutos * 60 * 1000;
     if (tempoDecorridoColeta > intervaloMilisegundos)
     {
+      // Insere a data e hora antes da primeira coleta pelo relogio
+      // if(!inseridoHoraColetada){
+      //   RtcDateTime agora = Rtc.GetDateTime();
+      //   escreveDateTime(agora);
+      //   inseridoHoraColetada = true;
+      // }
+
       sensors.requestTemperatures();
       for (int i = 0; i < sensoresAtivos; i++)
       {
@@ -354,7 +381,7 @@ void menu4()
     lcd.print(F("Defina intervalo"));
     lcd.setCursor(0, 1);
     lcd.print(intervaloColetaTemperaturaMinutos);
-    lcd.print(F("min"));
+    lcd.print(F(" min"));
     keyboardVariable(&intervaloColetaTemperaturaMinutos);
     break;
   }
@@ -431,7 +458,6 @@ void menu6()
   }
 
 } //end menu6
-
 /*
 
 void menu7()
@@ -513,7 +539,7 @@ void escreveSD(int sensor)
   }
   else
   {
-    // if the file didn't open, print an error:
+    // Caso não abra, imprime erro
     Serial.print(F("erro ao abrir arquivo "));
     Serial.println(F("captura1.txt"));
     lcd.setCursor(0, 0);
@@ -522,6 +548,12 @@ void escreveSD(int sensor)
     lcd.print(F("                "));
     esperaTempo(10000);
   }
+}
+
+void escreveHorario(){
+  // >>> datetime.fromisoformat('2011-11-04T00:05:23')
+// datetime.datetime(2011, 11, 4, 0, 5, 23)
+// >>> datetime.fromisoformat('2011-11-04 00:05:23.283')
 }
 
 void lerSD()
@@ -548,7 +580,7 @@ void lerSD()
   }
 }
 
-// O mesmo que delay(milisegundos); porém sem congelar processo
+// O mesmo que delay(milisegundos); porém sem congelar função (necessita testes). Usar para esperas pequenas
 void esperaTempo(int milisegundos)
 {
   unsigned long agora = millis();
@@ -556,3 +588,48 @@ void esperaTempo(int milisegundos)
   {
   }
 }
+
+  // >>> datetime.fromisoformat('2011-11-04T00:05:23')
+// datetime.datetime(2011, 11, 4, 0, 5, 23)
+// >>> datetime.fromisoformat('2011-11-04 00:05:23.283')
+
+// #define countof(a) (sizeof(a) / sizeof(a[0]))
+// void escreveDateTime(const RtcDateTime& dt)
+// {
+//     char datestring[20];
+
+//     snprintf_P(datestring, 
+//             countof(datestring),
+//             PSTR("%04u-%02u-%02uT%02u:%02u:%02u"),
+//             dt.Year(),
+//             dt.Month(),
+//             dt.Day(),
+//             dt.Hour(),
+//             dt.Minute(),
+//             dt.Second() );
+//     Serial.print(datestring);
+
+//       // Serial.print("Iniciando escrita no cartão...");
+//   arquivo = SD.open(F("captura1.txt"), FILE_WRITE);
+//   // if the file opened okay, write to it:
+//   if (arquivo)
+//   {
+//     Serial.print(F("Escrevendo no cartão... "));
+//     arquivo.print(F("horario "));
+//     arquivo.println(datestring);
+//     // close the file:
+//     arquivo.close();
+//     Serial.println(F("Feito!"));
+//   }
+//   else
+//   {
+//     // Caso não abra, imprime erro
+//     Serial.print(F("erro ao abrir arquivo "));
+//     Serial.println(F("captura1.txt"));
+//     lcd.setCursor(0, 0);
+//     lcd.print(F("Erro no SD"));
+//     lcd.setCursor(0, 1);
+//     lcd.print(F("                "));
+//     esperaTempo(10000);
+//   }
+// }

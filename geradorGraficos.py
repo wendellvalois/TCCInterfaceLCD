@@ -16,15 +16,12 @@ def conta_sensores(dicionario: dict):
 
 
 def gera_excel(captura):
+    # Gera excel de saída -- Incompleto
     import pandas as pd
     from openpyxl import Workbook
     wb = Workbook()
     planilha = wb.worksheets.index(0)
     planilha['a1'] = "Rapadura"
-
-
-def converte_dicionario_sensores():
-    pass
 
 
 def converte_para_nested_dictionary(captura_texto_bruto):
@@ -124,7 +121,7 @@ class FerramentaTCC:
         import datetime
         horario_inicio = datetime.datetime.now()
         # horario_fim = datetime.datetime.now()
-        horario_inicio = horario_inicio.replace(hour=12, minute=15, second=0)
+        horario_inicio = horario_inicio.replace(hour=11, minute=35, second=0)
         # horario_fim.replace(hour=14, minute=15, second=0)
 
         x_values = [horario_inicio + datetime.timedelta(minutes=i) for i in range(numero_coletas)]
@@ -153,6 +150,11 @@ class FerramentaTCC:
         t2, = axis.plot(x_values, termometro3, color='red')
         t3, = axis.plot(x_values, termometro4, linestyle='--')
 
+        # t0, = axis.plot(x_values, termometro1, color='blue')
+        # t1, = axis.plot(x_values, termometro2, color='red')
+        # t2, = axis.plot(x_values, termometro3, color='gold')
+        # t3, = axis.plot(x_values, termometro4, linestyle='--')
+
         import matplotlib.dates as mdates
         myFmt = mdates.DateFormatter('%H:%M')
         axis.xaxis.set_major_formatter(myFmt)
@@ -163,6 +165,9 @@ class FerramentaTCC:
         axis.grid()
 
         fig.legend((t0, t1, t2, t3), ('Preto', 'Branco', 'Vermelho', "Controle"), 'upper right')
+        # fig.legend((t0, t1, t3), ('Preto', 'Branco', "Controle"), 'upper right')
+        # fig.legend((t0, t1, t2, t3), ('Azul', 'Vermelho', 'Amarelo', "Controle"), 'upper right')
+        # fig.legend((t0, t1, t2), ('Azul', 'Vermelho', 'Amarelo'), 'upper right')
 
         canvas = FigureCanvasTkAgg(fig, master=self.win)
 
@@ -172,9 +177,6 @@ class FerramentaTCC:
         NavigationToolbar2Tk(canvas, self.toolbar_frame).grid(row=5, column=4, columnspan=3)
         # toolbar.grid(column=0)
         canvas.get_tk_widget().pack(side='right')
-
-
-
 
         self.frame_header = ttk.Frame(master=self.win)
         self.frame_header.pack()
@@ -191,35 +193,6 @@ class FerramentaTCC:
         self.win.quit()
         self.win.destroy()
         exit()
-
-    def cria_menubar(self):
-
-        # Tab Control introduced here --------------------------------------
-        tab_control = ttk.Notebook(self.win)  # Create Tab Control
-
-        tab1 = ttk.Frame(tab_control)  # Create a tab
-        tab_control.add(tab1, text='Tab 1')  # Add the tab
-
-        tab2 = ttk.Frame(tab_control)  # Add a second tab
-        tab_control.add(tab2, text='Tab 2')  # Make second tab visible
-
-        tab_control.pack(expand=1, fill="both")  # Pack to make visible
-
-        # Creating a Menu Bar
-        menu_bar = tk.Menu(tab1)
-        self.win.config(menu=menu_bar)
-
-        # Add menu items
-        file_menu = Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="New")
-        file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self._quit)
-        menu_bar.add_cascade(label="File", menu=file_menu)
-
-        # Add another Menu to the Menu Bar and an item
-        help_menu = Menu(menu_bar, tearoff=0)
-        help_menu.add_command(label="About")
-        menu_bar.add_cascade(label="Help", menu=help_menu)
 
 
 def main():
