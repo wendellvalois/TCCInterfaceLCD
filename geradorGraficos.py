@@ -1,7 +1,9 @@
+from xdrlib import ConversionError
+
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import tkinter as tk
-from tkinter import ttk, scrolledtext, Frame
+from tkinter import ttk, scrolledtext, Frame, messagebox
 from tkinter import Menu
 
 
@@ -15,13 +17,13 @@ def conta_sensores(dicionario: dict):
     return len(lista_sensores)
 
 
-def gera_excel(captura):
-    # Gera excel de saída -- Incompleto
-    import pandas as pd
-    from openpyxl import Workbook
-    wb = Workbook()
-    planilha = wb.worksheets.index(0)
-    planilha['a1'] = "Rapadura"
+# def gera_excel(captura):
+#     # Gera excel de saída -- Incompleto
+#     import pandas as pd
+#     from openpyxl import Workbook
+#     wb = Workbook()
+#     planilha = wb.worksheets.index(0)
+#     planilha['a1'] = "Rapadura"
 
 
 def converte_para_nested_dictionary(captura_texto_bruto):
@@ -101,6 +103,9 @@ class FerramentaTCC:
 
     def click_me(self):
         # action.configure(text="** Eu fui clicado!")
+
+
+
         captura_texto_bruto = self.scr.get("1.0", tk.END)
 
         dicionario_capturas = converte_para_nested_dictionary(captura_texto_bruto)
@@ -114,6 +119,13 @@ class FerramentaTCC:
         self.plot_grafico(dicionario_capturas)
 
     def plot_grafico(self, captura: dict):
+
+        try:
+            hora = int(self.hora.get())
+            minuto = int(self.minuto.get())
+        except ValueError:
+            messagebox.showerror(title=None, message="Horário incompativel")
+
         numero_coletas = int(len(captura) / conta_sensores(captura))
         # x_values = range(0, numero_coletas)
 
@@ -121,7 +133,7 @@ class FerramentaTCC:
         import datetime
         horario_inicio = datetime.datetime.now()
         # horario_fim = datetime.datetime.now()
-        horario_inicio = horario_inicio.replace(hour=11, minute=35, second=0)
+        horario_inicio = horario_inicio.replace(hour=hora, minute=minuto, second=0)
         # horario_fim.replace(hour=14, minute=15, second=0)
 
         x_values = [horario_inicio + datetime.timedelta(minutes=i) for i in range(numero_coletas)]
@@ -144,10 +156,10 @@ class FerramentaTCC:
         fig = Figure(figsize=(12, 5), facecolor='white')
         # --------------------------------------------------------------
         axis = fig.add_subplot(111)  # 1 row, 1 column
-
+        #
         t0, = axis.plot(x_values, termometro1, color='black')
-        t1, = axis.plot(x_values, termometro2, color='grey')
-        t2, = axis.plot(x_values, termometro3, color='red')
+        t1, = axis.plot(x_values, termometro2, color='red')
+        t2, = axis.plot(x_values, termometro3, color='grey')
         t3, = axis.plot(x_values, termometro4, linestyle='--')
 
         # t0, = axis.plot(x_values, termometro1, color='blue')

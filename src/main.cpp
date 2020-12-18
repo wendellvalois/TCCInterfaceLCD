@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
+#include <OneWire.h>
 #include <DallasTemperature.h>
 #include <SPI.h>
 #include <SD.h>
