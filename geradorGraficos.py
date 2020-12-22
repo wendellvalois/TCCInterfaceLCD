@@ -1,5 +1,4 @@
 from xdrlib import ConversionError
-
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import tkinter as tk
@@ -15,15 +14,6 @@ def conta_sensores(dicionario: dict):
     print(lista_sensores)
     print(len(lista_sensores))
     return len(lista_sensores)
-
-
-# def gera_excel(captura):
-#     # Gera excel de saída -- Incompleto
-#     import pandas as pd
-#     from openpyxl import Workbook
-#     wb = Workbook()
-#     planilha = wb.worksheets.index(0)
-#     planilha['a1'] = "Rapadura"
 
 
 def converte_para_nested_dictionary(captura_texto_bruto):
@@ -44,7 +34,7 @@ def converte_para_nested_dictionary(captura_texto_bruto):
 
 class FerramentaTCC:
     def __init__(self):
-        # Create instance
+        # Cria instancia
         self.win = tk.Tk()
 
         # Add a title
@@ -60,19 +50,8 @@ class FerramentaTCC:
         self.hora_inserida = ttk.Entry(self.frame_header, width=2, textvariable=self.hora)
 
         # Minuto
-        # self.aLabelMinuto = ttk.Label(self.frame_header, text="Minuto")
         self.minuto = tk.StringVar()
         self.minuto_inserido = ttk.Entry(self.frame_header, width=2, textvariable=self.minuto)
-
-        # # Hora
-        # self.aLabelHoraTermino = ttk.Label(self.frame_header, text="Hora Término")
-        # self.hora_termino = tk.StringVar()
-        # self.hora_termino_inserida = ttk.Entry(self.frame_header, width=2, textvariable=self.hora_termino)
-        #
-        # # Minuto
-        # # self.aLabelMinutoTermino = ttk.Label(self.frame_header, text="Minuto Final")
-        # self.minuto_termino = tk.StringVar()
-        # self.minuto_termino_inserido = ttk.Entry(self.frame_header, width=2, textvariable=self.minuto_termino)
 
         self.text_area = ttk.Frame(self.win)
         self.text_area.pack(side='left')
@@ -92,20 +71,11 @@ class FerramentaTCC:
         # self.aLabelMinuto.grid(column=1, row=0, sticky='W')
         self.minuto_inserido.grid(column=1, row=1, sticky='W')
 
-        # self.aLabelHoraTermino.grid(column=2, row=0, sticky='E', columnspan=2)
-        # self.hora_termino_inserida.grid(column=2, row=1, sticky='E')
-        # # self.aLabelMinutoTermino.grid(column=3, row=0, sticky='W')
-        # self.minuto_termino_inserido.grid(column=3, row=1, sticky='W')
-
         self.scr.grid(column=0, row=2, columnspan=4)
         # self.aLabel.grid(column=0, row=0)
         self.botao_gerar_grafico.grid(column=0, row=3)
 
     def click_me(self):
-        # action.configure(text="** Eu fui clicado!")
-
-
-
         captura_texto_bruto = self.scr.get("1.0", tk.END)
 
         dicionario_capturas = converte_para_nested_dictionary(captura_texto_bruto)
@@ -132,9 +102,7 @@ class FerramentaTCC:
         # Imprimir por tempo
         import datetime
         horario_inicio = datetime.datetime.now()
-        # horario_fim = datetime.datetime.now()
         horario_inicio = horario_inicio.replace(hour=hora, minute=minuto, second=0)
-        # horario_fim.replace(hour=14, minute=15, second=0)
 
         x_values = [horario_inicio + datetime.timedelta(minutes=i) for i in range(numero_coletas)]
 
@@ -162,6 +130,7 @@ class FerramentaTCC:
         t2, = axis.plot(x_values, termometro3, color='grey')
         t3, = axis.plot(x_values, termometro4, linestyle='--')
 
+        # para latas coloridas
         # t0, = axis.plot(x_values, termometro1, color='blue')
         # t1, = axis.plot(x_values, termometro2, color='red')
         # t2, = axis.plot(x_values, termometro3, color='gold')
@@ -199,7 +168,6 @@ class FerramentaTCC:
         self.hora = tk.StringVar()
         self.hora_inserida = ttk.Entry(self.frame_header, width=2, textvariable=self.hora)
 
-
     # Exit GUI cleanly
     def _quit(self):
         self.win.quit()
@@ -210,8 +178,7 @@ class FerramentaTCC:
 def main():
     ferramenta = FerramentaTCC()
     ferramenta.win.mainloop()
-    print("Hello")
-
+    
 
 if __name__ == '__main__':
     main()
