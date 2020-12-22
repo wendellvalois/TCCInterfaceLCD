@@ -178,7 +178,7 @@ class FerramentaTCC:
 def main():
     ferramenta = FerramentaTCC()
     ferramenta.win.mainloop()
-    
+
 
 if __name__ == '__main__':
     main()
